@@ -1,0 +1,1484 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>E-Voting Pemilihan Ketua IPMM / OSIS (Cloud Real-Time)</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          colors: {
+            ipmm: {
+              emerald: '#059669',
+              dark: '#047857',
+              gold: '#f59e0b',
+              navy: '#0f172a',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      min-height: 100vh;
+      color: #f8fafc;
+    }
+    .glass-card {
+      background: rgba(30, 41, 59, 0.75);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .glass-input {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+    }
+    .glass-input:focus {
+      border-color: #10b981;
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
+    }
+    .gold-gradient {
+      background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
+    }
+    .emerald-gradient {
+      background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+    }
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #10b981;
+    }
+  </style>
+</head>
+<body class="flex flex-col min-h-screen text-slate-100 antialiased selection:bg-emerald-500 selection:text-white">
+
+  <!-- Header Navigasi -->
+  <header class="sticky top-0 z-40 w-full glass-card border-b border-slate-700/50 px-4 py-3 shadow-lg">
+    <div class="max-w-7xl mx-auto flex justify-between items-center">
+      <div class="flex items-center gap-3 cursor-pointer" onclick="switchView('landing')">
+        <div class="w-10 h-10 rounded-xl emerald-gradient flex items-center justify-center text-white shadow-md shadow-emerald-900/40">
+          <i data-lucide="vote" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <h1 class="text-base sm:text-lg font-bold tracking-tight text-white leading-tight flex items-center gap-2">
+            E-VOTING IPMM / OSIS
+            <span id="cloud-status-badge" class="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Cloud Active
+            </span>
+          </h1>
+          <p class="text-xs text-emerald-400 font-medium">Sistem Pemilihan Terpusat Real-Time</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <span id="phase-badge" class="px-3 py-1 text-xs font-semibold rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+          <span id="phase-text">Tahap 1: 3 Formatur</span>
+        </span>
+
+        <button onclick="openAdminModal()" class="ml-2 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-300 transition flex items-center gap-1.5">
+          <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i>
+          <span class="hidden sm:inline">Panel</span> Admin
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Container Toast Notification -->
+  <div id="toast-container" class="fixed top-20 right-4 z-50 flex flex-col gap-2 max-w-sm"></div>
+
+  <!-- MAIN CONTAINER -->
+  <main class="flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+
+    <!-- ========================================== -->
+    <!-- HALAMAN 1: BERANDA & INPUT DATA PEMILIH -->
+    <!-- ========================================== -->
+    <section id="view-landing" class="view-section transition-all duration-300">
+      <div class="max-w-3xl mx-auto text-center mb-8">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold mb-4">
+          <i data-lucide="sparkles" class="w-4 h-4"></i> Musyawarah & Pemilihan Umum Terpusat IPMM / OSIS
+        </div>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight mb-3">
+          Suara Anda Langsung Tersinkronisasi Secara Real-Time
+        </h2>
+        <p class="text-slate-400 text-sm sm:text-base leading-relaxed">
+          Silakan masukkan identitas diri Anda secara valid. Sistem cloud akan memverifikasi status hak suara Anda secara otomatis.
+        </p>
+      </div>
+
+      <div class="max-w-xl mx-auto glass-card rounded-2xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+        <div class="absolute top-0 left-0 w-full h-1 emerald-gradient"></div>
+        <form id="form-voter-login" onsubmit="handleVoterLogin(event)" class="space-y-5">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+              <i data-lucide="user" class="inline w-3.5 h-3.5 mr-1 text-emerald-400"></i> Nama Lengkap Pemilih
+            </label>
+            <input type="text" id="input-nama" required placeholder="Masukkan Nama Lengkap Anda" class="w-full px-4 py-3 rounded-xl glass-input text-sm">
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+              <i data-lucide="graduation-cap" class="inline w-3.5 h-3.5 mr-1 text-emerald-400"></i> Kelas / Tingkat
+            </label>
+            <select id="select-kelas" required onchange="handleKelasChange(this)" class="w-full px-4 py-3 rounded-xl glass-input text-sm">
+              <option value="" disabled selected class="bg-slate-900 text-slate-400">Pilih Kelas Anda...</option>
+              <optgroup label="Tingkat X" class="bg-slate-900 text-slate-200">
+                <option value="XA">XA</option>
+                <option value="XB">XB</option>
+              </optgroup>
+              <optgroup label="Tingkat XI" class="bg-slate-900 text-slate-200">
+                <option value="XIA">XIA</option>
+                <option value="XIB">XIB</option>
+              </optgroup>
+              <optgroup label="Tingkat XII" class="bg-slate-900 text-slate-200">
+                <option value="XIIA">XIIA</option>
+                <option value="XIIB">XIIB</option>
+              </optgroup>
+            </select>
+            <input type="text" id="input-kelas-manual" placeholder="Tuliskan nama kelas/unit kerja..." class="w-full px-4 py-3 mt-2 rounded-xl glass-input text-sm hidden">
+          </div>
+
+          <div class="pt-2">
+            <button type="submit" id="btn-login-submit" class="w-full py-3.5 px-6 rounded-xl font-bold text-white emerald-gradient hover:opacity-95 transition shadow-lg shadow-emerald-900/50 flex items-center justify-center gap-2">
+              <span>Verifikasi Identitas & Lanjut</span>
+              <i data-lucide="arrow-right" class="w-5 h-5"></i>
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- HALAMAN 2: PROFIL, VISI & MISI CANDIDATES -->
+    <!-- ========================================== -->
+    <section id="view-visi-misi" class="view-section hidden transition-all duration-300">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div>
+          <span class="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Tahap Penjajakan Profil</span>
+          <h2 class="text-2xl sm:text-3xl font-bold text-white">Visi & Misi Candidate</h2>
+          <p class="text-slate-400 text-sm">Pelajari Visi dan Misi masing-masing calon sebelum memberikan suara Anda.</p>
+        </div>
+
+        <div id="phase-banner" class="glass-card p-3 rounded-xl border border-amber-500/30 flex items-center gap-3">
+          <i data-lucide="info" class="w-5 h-5 text-amber-400 flex-shrink-0"></i>
+          <div class="text-xs">
+            <span class="font-bold text-amber-300 block" id="banner-phase-title">Tahap 1: Pemilihan 3 Calon Formatur</span>
+            <span class="text-slate-300" id="banner-phase-desc">Memilih kandidat terbaik untuk jajaran formatur kepemimpinan.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Candidate Cards Grid -->
+      <div id="candidate-cards-container" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <!-- JS rendered cards -->
+      </div>
+
+      <!-- Bottom Action -->
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-4 glass-card p-4 sm:p-6 rounded-2xl">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-emerald-400 font-bold border border-slate-700" id="badge-voter-initial">
+            ?
+          </div>
+          <div>
+            <div class="text-xs text-slate-400">Pemilih Aktif:</div>
+            <div class="text-sm font-bold text-white" id="display-voter-info">Belum terisi</div>
+          </div>
+        </div>
+
+        <div class="flex gap-3 w-full sm:w-auto">
+          <button onclick="switchView('landing')" class="w-1/2 sm:w-auto px-5 py-2.5 rounded-xl border border-slate-600 hover:bg-slate-800 text-slate-300 text-sm font-semibold transition flex items-center justify-center gap-2">
+            <i data-lucide="arrow-left" class="w-4 h-4"></i> Kembali
+          </button>
+          <button onclick="switchView('bilik-suara')" class="w-1/2 sm:w-auto px-6 py-2.5 rounded-xl emerald-gradient text-white text-sm font-bold shadow-lg shadow-emerald-900/40 hover:opacity-95 transition flex items-center justify-center gap-2">
+            <span>Menuju Bilik Suara</span>
+            <i data-lucide="vote" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- HALAMAN 3: BILIK SUARA (VOTING) -->
+    <!-- ========================================== -->
+    <section id="view-bilik-suara" class="view-section hidden transition-all duration-300">
+      <div class="max-w-3xl mx-auto text-center mb-8">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-semibold mb-3">
+          <i data-lucide="lock" class="w-3.5 h-3.5"></i> Bilik Pemilihan Tertutup & Rahasia
+        </div>
+        <h2 class="text-2xl sm:text-3xl font-bold text-white mb-2">Tentukan Pilihan Anda!</h2>
+        <p class="text-slate-400 text-sm">
+          Halo <span id="voter-name-highlight" class="font-bold text-emerald-400">---</span>, silakan klik tombol <strong>"Pilih Candidate Ini"</strong> pada calon pilihan Anda.
+        </p>
+      </div>
+
+      <!-- Voting Options Container -->
+      <div id="voting-options-container" class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto mb-8">
+        <!-- JS rendered voting cards -->
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- HALAMAN 4: UCAPAN TERIMA KASIH -->
+    <!-- ========================================== -->
+    <section id="view-thankyou" class="view-section hidden transition-all duration-300">
+      <div class="max-w-xl mx-auto glass-card rounded-3xl p-8 sm:p-10 text-center shadow-2xl relative overflow-hidden">
+        <div class="w-20 h-20 rounded-full bg-emerald-500/20 border-2 border-emerald-400 text-emerald-400 flex items-center justify-center mx-auto mb-6 shadow-xl shadow-emerald-900/40">
+          <i data-lucide="check-circle-2" class="w-10 h-10 animate-bounce"></i>
+        </div>
+
+        <h2 class="text-3xl font-extrabold text-white mb-2">Terima Kasih!</h2>
+        <p class="text-emerald-400 font-semibold text-base mb-4">Suara Anda telah resmi tersimpan di Cloud Database.</p>
+        
+        <div class="bg-slate-900/80 p-4 rounded-2xl text-left space-y-2 mb-6 border border-slate-800 text-xs sm:text-sm">
+          <div class="flex justify-between text-slate-400">
+            <span>Nama Pemilih:</span>
+            <strong id="ty-voter-name" class="text-white">---</strong>
+          </div>
+          <div class="flex justify-between text-slate-400">
+            <span>Kelas / Unit:</span>
+            <strong id="ty-voter-kelas" class="text-white">---</strong>
+          </div>
+          <div class="flex justify-between text-slate-400">
+            <span>Waktu Memilih:</span>
+            <strong id="ty-voter-time" class="text-emerald-400">---</strong>
+          </div>
+          <div class="flex justify-between text-slate-400 border-t border-slate-800 pt-2 mt-2">
+            <span>Status Transaksi:</span>
+            <strong class="text-emerald-400 flex items-center gap-1"><i data-lucide="cloud-check" class="w-4 h-4"></i> Cloud Synced & Encrypted</strong>
+          </div>
+        </div>
+
+        <p class="text-slate-400 text-xs mb-6">
+          Harap tinggalkan bilik suara agar pemilih berikutnya dapat menggunakan hak suaranya.
+        </p>
+
+        <button onclick="resetSessionForNextVoter()" class="w-full py-3.5 px-6 rounded-xl font-bold text-white emerald-gradient hover:opacity-95 transition shadow-lg shadow-emerald-900/50 flex items-center justify-center gap-2">
+          <i data-lucide="rotate-ccw" class="w-5 h-5"></i>
+          <span>Kembali ke Beranda (Pemilih Berikutnya)</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- HALAMAN 5: DASHBOARD ADMIN & REKAP SUARA -->
+    <!-- ========================================== -->
+    <section id="view-admin" class="view-section hidden transition-all duration-300">
+      <!-- Admin Header -->
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 pb-6 border-b border-slate-800">
+        <div>
+          <div class="flex items-center gap-2 text-xs font-semibold text-emerald-400">
+            <i data-lucide="shield-check" class="w-4 h-4"></i> Panel Pengawas Pemilihan Real-Time
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-bold text-white">Cloud Database Rekapitulasi</h2>
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+          <button onclick="exportToCSV()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-emerald-400 text-xs font-bold transition flex items-center gap-2">
+            <i data-lucide="download" class="w-4 h-4"></i> Ekspor CSV / Excel
+          </button>
+          <button onclick="openCandidateEditModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-amber-400 text-xs font-bold transition flex items-center gap-2">
+            <i data-lucide="edit-3" class="w-4 h-4"></i> Edit Data Calon
+          </button>
+          <button onclick="openCanvaTutorialModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sky-400 text-xs font-bold transition flex items-center gap-2">
+            <i data-lucide="code" class="w-4 h-4"></i> Cara Embed Canva
+          </button>
+          <button onclick="confirmResetAllData()" class="px-4 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-400 text-xs font-bold transition flex items-center gap-2">
+            <i data-lucide="trash-2" class="w-4 h-4"></i> Reset Suara Cloud
+          </button>
+          <button onclick="switchView('landing')" class="px-4 py-2 rounded-xl emerald-gradient text-white text-xs font-bold transition flex items-center gap-2">
+            <i data-lucide="home" class="w-4 h-4"></i> Ke Beranda
+          </button>
+        </div>
+      </div>
+
+      <!-- Phase Control Box -->
+      <div class="glass-card p-6 rounded-2xl mb-8 border border-amber-500/30">
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div>
+            <h3 class="text-base font-bold text-amber-300 flex items-center gap-2">
+              <i data-lucide="git-merge" class="w-5 h-5"></i>
+              Mekanisme Pengerucutan Calon Terpusat
+            </h3>
+            <p class="text-slate-300 text-xs mt-1">
+              Saat ini sistem berjalan pada: <strong id="admin-current-phase-label" class="text-white">Tahap 1 (Pemilihan 3 Formatur)</strong>
+            </p>
+          </div>
+
+          <div class="flex flex-wrap gap-3 w-full md:w-auto">
+            <button onclick="setVotingPhaseCloud(1)" class="px-4 py-2 rounded-xl text-xs font-bold border transition flex items-center gap-2" id="btn-phase-1">
+              Kembali ke Tahap 1 (3 Formatur)
+            </button>
+            <button onclick="autoKerucutkanKetuaCloud()" class="px-4 py-2 rounded-xl gold-gradient text-slate-950 text-xs font-bold shadow-lg hover:opacity-95 transition flex items-center gap-2">
+              <i data-lucide="crown" class="w-4 h-4"></i>
+              Kerucutkan ke 1 Calon Terpilih (Cloud Sync)
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats Metric Overview Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div class="glass-card p-5 rounded-2xl">
+          <div class="text-slate-400 text-xs font-medium">Total Suara Ter-rekam</div>
+          <div class="text-3xl font-extrabold text-white mt-1" id="stat-total-votes">0</div>
+          <div class="text-xs text-emerald-400 mt-2 flex items-center gap-1">
+            <i data-lucide="cloud-check" class="w-3.5 h-3.5"></i> Synchronized Real-time
+          </div>
+        </div>
+
+        <div class="glass-card p-5 rounded-2xl">
+          <div class="text-slate-400 text-xs font-medium">Kandidat Perolehan Tertinggi</div>
+          <div class="text-xl font-bold text-amber-400 mt-1 truncate" id="stat-top-candidate">-</div>
+          <div class="text-xs text-slate-400 mt-2" id="stat-top-count">0 suara</div>
+        </div>
+
+        <div class="glass-card p-5 rounded-2xl">
+          <div class="text-slate-400 text-xs font-medium">Status Fase Aktif Cloud</div>
+          <div class="text-xl font-bold text-emerald-400 mt-1" id="stat-phase-status">Tahap 1</div>
+          <div class="text-xs text-slate-400 mt-2">Semua Perangkat Tersinkron</div>
+        </div>
+
+        <div class="glass-card p-5 rounded-2xl">
+          <div class="text-slate-400 text-xs font-medium">Calon Ketua Terpilih (Tahap 2)</div>
+          <div class="text-xl font-bold text-amber-300 mt-1 truncate" id="stat-final-ketua">Belum Ditentukan</div>
+          <div class="text-xs text-slate-400 mt-2">Hasil Akhir Pengerucutan</div>
+        </div>
+      </div>
+
+      <!-- Chart & Perolehan Cards -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
+        <!-- Visual Bar Chart -->
+        <div class="lg:col-span-7 glass-card p-6 rounded-2xl flex flex-col">
+          <h3 class="text-sm font-bold text-white mb-4 flex items-center gap-2">
+            <i data-lucide="bar-chart-3" class="w-4 h-4 text-emerald-400"></i>
+            Grafik Perolehan Suara Real-Time (Cloud Live)
+          </h3>
+          <div class="flex-grow min-h-[250px] relative">
+            <canvas id="chart-votes"></canvas>
+          </div>
+        </div>
+
+        <!-- Breakdown List Cards -->
+        <div class="lg:col-span-5 glass-card p-6 rounded-2xl flex flex-col justify-between space-y-4">
+          <h3 class="text-sm font-bold text-white flex items-center gap-2">
+            <i data-lucide="pie-chart" class="w-4 h-4 text-emerald-400"></i>
+            Rincian Suara Per Candidate
+          </h3>
+          <div id="admin-candidates-breakdown" class="space-y-4">
+            <!-- JS Rendered list -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Voter Log Table -->
+      <div class="glass-card rounded-2xl p-6">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+          <div>
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+              <i data-lucide="users" class="w-4 h-4 text-emerald-400"></i>
+              Daftar Rekapitulasi Pemilih Seluruh Perangkat
+            </h3>
+            <p class="text-xs text-slate-400">Log suara masuk terpusat dari seluruh HP / browser siswa.</p>
+          </div>
+
+          <div class="flex gap-2 w-full sm:w-auto">
+            <input type="text" id="search-voter" oninput="renderAdminTable()" placeholder="Cari Nama / Kelas..." class="px-3 py-1.5 text-xs rounded-xl glass-input w-full sm:w-48">
+            <select id="filter-kelas-admin" onchange="renderAdminTable()" class="px-3 py-1.5 text-xs rounded-xl glass-input bg-slate-900">
+              <option value="ALL">Semua Kelas</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-900/60 text-slate-400 uppercase font-semibold">
+              <tr>
+                <th class="p-3">No</th>
+                <th class="p-3">Waktu Pilih</th>
+                <th class="p-3">Nama Pemilih</th>
+                <th class="p-3">Kelas</th>
+                <th class="p-3">Tahap</th>
+                <th class="p-3">Pilihan Kandidat</th>
+                <th class="p-3 text-right">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="table-voters-body" class="divide-y divide-slate-800 text-slate-300">
+              <!-- JS rendered rows -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="mt-auto border-t border-slate-800 py-4 px-4 text-center text-xs text-slate-500">
+    <p>Aplikasi E-Voting Terpusat IPMM / OSIS &copy; 2026. Powered by Firebase Real-Time Cloud Engine.</p>
+  </footer>
+
+  <!-- ========================================== -->
+  <!-- MODAL: PIN ADMIN -->
+  <!-- ========================================== -->
+  <div id="modal-admin-pin" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="glass-card max-w-sm w-full p-6 rounded-2xl shadow-2xl relative">
+      <button onclick="closeAdminModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="text-center mb-6">
+        <div class="w-12 h-12 rounded-full bg-slate-800 border border-slate-700 text-emerald-400 flex items-center justify-center mx-auto mb-3">
+          <i data-lucide="key-round" class="w-6 h-6"></i>
+        </div>
+        <h3 class="text-lg font-bold text-white">Akses Panel Admin</h3>
+        <p class="text-xs text-slate-400 mt-1">Masukkan PIN keamanan panitia untuk melanjutkan.</p>
+      </div>
+
+      <form onsubmit="handleAdminLogin(event)" class="space-y-4">
+        <div>
+          <input type="password" id="input-pin" maxlength="6" placeholder="Masukkan PIN (Default: 1234)" required class="w-full text-center tracking-widest text-lg font-mono py-3 rounded-xl glass-input">
+          <p class="text-[10px] text-slate-400 text-center mt-2">PIN Default Panitia: <strong class="text-amber-400">1234</strong></p>
+        </div>
+        <button type="submit" class="w-full py-3 rounded-xl emerald-gradient font-bold text-white text-sm hover:opacity-95 transition">
+          Buka Panel Admin
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: KONFIRMASI VOTING -->
+  <!-- ========================================== -->
+  <div id="modal-confirm-vote" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="glass-card max-w-md w-full p-6 rounded-2xl shadow-2xl relative text-center">
+      <div class="w-16 h-16 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center mx-auto mb-4">
+        <i data-lucide="help-circle" class="w-8 h-8"></i>
+      </div>
+
+      <h3 class="text-xl font-bold text-white mb-2">Konfirmasi Pilihan Suara</h3>
+      <p class="text-sm text-slate-300 mb-4">
+        Apakah Anda yakin ingin mengirimkan suara ini ke Database Cloud?
+      </p>
+
+      <div class="bg-slate-900/90 p-4 rounded-xl border border-slate-800 mb-6">
+        <div class="text-xs text-amber-400 font-semibold" id="confirm-candidate-no">KANDIDAT --</div>
+        <div class="text-lg font-bold text-white" id="confirm-candidate-name">Nama Candidate</div>
+        <div class="text-xs text-slate-400" id="confirm-candidate-class">Kelas Candidate</div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <button onclick="closeConfirmModal()" class="py-3 rounded-xl border border-slate-600 hover:bg-slate-800 text-slate-300 font-semibold text-sm transition">
+          Batal / Cek Lagi
+        </button>
+        <button id="btn-submit-final-vote" onclick="submitVoteCloud()" class="py-3 rounded-xl emerald-gradient font-bold text-white text-sm shadow-lg shadow-emerald-900/50 hover:opacity-95 transition">
+          Kirim Suara Sah
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: EDIT DATA CALON (ADMIN) -->
+  <!-- ========================================== -->
+  <div id="modal-edit-candidates" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4 overflow-y-auto">
+    <div class="glass-card max-w-2xl w-full p-6 rounded-2xl shadow-2xl relative my-8">
+      <button onclick="closeCandidateEditModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+        <i data-lucide="edit-3" class="w-5 h-5 text-amber-400"></i>
+        Edit Data Kandidat di Cloud
+      </h3>
+
+      <form onsubmit="saveCandidatesDataCloud(event)" class="space-y-6">
+        <div id="edit-candidates-fields-container" class="space-y-6 max-h-[60vh] overflow-y-auto pr-2">
+          <!-- JS Rendered Edit Form Fields -->
+        </div>
+
+        <div class="flex justify-end gap-3 pt-4 border-t border-slate-800">
+          <button type="button" onclick="closeCandidateEditModal()" class="px-5 py-2.5 rounded-xl border border-slate-600 hover:bg-slate-800 text-slate-300 text-xs font-semibold">
+            Batal
+          </button>
+          <button type="submit" class="px-6 py-2.5 rounded-xl gold-gradient text-slate-950 text-xs font-bold shadow-lg">
+            Simpan Perubahan ke Cloud
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: TUTORIAL CANVA EMBED -->
+  <!-- ========================================== -->
+  <div id="modal-canva-tutorial" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="glass-card max-w-lg w-full p-6 rounded-2xl shadow-2xl relative">
+      <button onclick="closeCanvaTutorialModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <h3 class="text-lg font-bold text-white mb-2 flex items-center gap-2">
+        <i data-lucide="code" class="w-5 h-5 text-sky-400"></i>
+        Panduan Embed ke Canva Site
+      </h3>
+      <p class="text-xs text-slate-300 mb-4 leading-relaxed">
+        Karena aplikasi ini telah menggunakan Firebase Cloud Database, Anda cukup menyematkan file HTML ini di Canva Site agar siswa yang membuka Canva dari HP masing-masing dapat memilih secara terpusat:
+      </p>
+
+      <ol class="list-decimal list-inside text-xs text-slate-300 space-y-2 bg-slate-900/80 p-4 rounded-xl border border-slate-800">
+        <li>Host file HTML ini pada hosting gratis (Vercel, Netlify, GitHub Pages, atau iframe langsung).</li>
+        <li>Buka Canva Site Anda $\rightarrow$ Tambahkan elemen <strong>Sematkan (Embed)</strong>.</li>
+        <li>Masukkan tautan link web Anda atau pasang kode HTML embed.</li>
+        <li>Tarik kotak iframe Canva agar ukuran aplikasi sesuai dengan tampilan HP & Laptop.</li>
+      </ol>
+
+      <button onclick="closeCanvaTutorialModal()" class="w-full mt-5 py-2.5 rounded-xl emerald-gradient font-bold text-white text-xs">
+        Mengerti & Tutup
+      </button>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: KONFIRMASI AKSI ADMIN (HAPUS/RESET) -->
+  <!-- ========================================== -->
+  <div id="modal-admin-action-confirm" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="glass-card max-w-sm w-full p-6 rounded-2xl shadow-2xl relative text-center">
+      <div class="w-14 h-14 rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/30 flex items-center justify-center mx-auto mb-4">
+        <i data-lucide="alert-triangle" class="w-7 h-7"></i>
+      </div>
+      <h3 class="text-lg font-bold text-white mb-2" id="admin-confirm-title">Konfirmasi Hapus</h3>
+      <p class="text-xs text-slate-300 mb-6 leading-relaxed" id="admin-confirm-desc">
+        Apakah Anda yakin ingin melanjutkan tindakan ini?
+      </p>
+      <div class="grid grid-cols-2 gap-3">
+        <button onclick="closeAdminActionConfirm()" class="py-2.5 rounded-xl border border-slate-600 hover:bg-slate-800 text-slate-300 font-semibold text-xs transition">
+          Batal
+        </button>
+        <button id="btn-admin-confirm-yes" class="py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 font-bold text-white text-xs shadow-lg transition">
+          Ya, Lanjutkan
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- FIREBASE MODULE & REAL-TIME APP LOGIC -->
+  <!-- ========================================== -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { 
+      getFirestore, 
+      doc, 
+      getDoc, 
+      setDoc, 
+      updateDoc, 
+      deleteDoc, 
+      onSnapshot, 
+      collection, 
+      addDoc, 
+      getDocs 
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // --- DEFAULT INITIAL STATE ---
+    const DEFAULT_CANDIDATES = [
+      {
+        id: 1,
+        no: '01',
+        name: 'Ahmad Raihan Pratama',
+        class: 'XI-1',
+        photo: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400',
+        vision: 'Mewujudkan IPMM/OSIS yang progresif, inklusif, dan berwawasan teknologi berlandaskan nilai keislaman.',
+        mission: '1. Meningkatkan kegiatan kaderisasi kepemimpinan digital.\n2. Menjalin sinergi antar-ekstrakurikuler secara transparan.\n3. Memperkuat program kepedulian sosial & lingkungan sekolah.'
+      },
+      {
+        id: 2,
+        no: '02',
+        name: 'Siti Nur Aisyah',
+        class: 'XI-3',
+        photo: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=400',
+        vision: 'Membangun karakter pelajar bermartabat, kreatif, dan aktif berkarya di tingkat regional.',
+        mission: '1. Mengoptimalkan wadah aspirasi siswa berbasis online.\n2. Mengadakan festival seni & literasi tahunan berkemajuan.\n3. Menumbuhkan budaya disiplin dan apresiasi prestasi siswa.'
+      },
+      {
+        id: 3,
+        no: '03',
+        name: 'Muhammad Farhan',
+        class: 'XI-2',
+        photo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=400',
+        vision: 'Menjadikan OSIS/IPMM sebagai pilar pembentukan pelajar mandiri, adil, dan berdaya saing global.',
+        mission: '1. Pelatihan kewirausahaan muda berbasis proyek kreatif.\n2. Program pendampingan minat & bakat siswa secara kontinyu.\n3. Gerakan literasi digital sehat dan anti-bullying.'
+      }
+    ];
+
+    // --- FIREBASE INITIALIZATION & CONFIG ---
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'musyran-bcbb1';
+    
+    // Konfigurasi Firebase Project musyran-bcbb1 (Isi apiKey & appId asli dari Firebase Console)
+    const firebaseConfig = typeof __firebase_config !== 'undefined' 
+      ? JSON.parse(__firebase_config)
+      : {
+          apiKey: "YOUR_API_KEY",
+          authDomain: "musyran-bcbb1.firebaseapp.com",
+          projectId: "musyran-bcbb1",
+          storageBucket: "musyran-bcbb1.appspot.com",
+          messagingSenderId: "750876742925",
+          appId: "YOUR_APP_ID"
+        };
+
+    let app, auth, db = null, currentUser = null;
+    let isCloudOnline = false;
+
+    // Local State synchronized with Cloud
+    let candidates = DEFAULT_CANDIDATES;
+    let votersLog = [];
+    let votingPhase = 1;
+    let finalKetuaId = null;
+    let currentVoter = JSON.parse(sessionStorage.getItem('evote_current_voter')) || null;
+    let selectedCandidateForVote = null;
+    let voteChartInstance = null;
+
+    // Setup Path Helper Functions (Called only after db is initialized)
+    const getVotesCollectionRef = (firestoreDb) => collection(firestoreDb, 'artifacts', appId, 'public', 'data', 'votes');
+    const settingsDocPath = (firestoreDb) => doc(firestoreDb, 'artifacts', appId, 'public', 'data', 'settings', 'config');
+    const candidatesDocPath = (firestoreDb) => doc(firestoreDb, 'artifacts', appId, 'public', 'data', 'candidates', 'list');
+
+    // Initialize App & Auth
+    async function initFirebase() {
+      try {
+        app = initializeApp(firebaseConfig);
+        db = getFirestore(app);
+        auth = getAuth(app);
+
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          const userCredential = await signInWithCustomToken(auth, __initial_auth_token);
+          currentUser = userCredential.user;
+        } else {
+          const userCredential = await signInAnonymously(auth);
+          currentUser = userCredential.user;
+        }
+
+        isCloudOnline = true;
+        updateCloudStatusBadge(true);
+        setupRealtimeListeners();
+      } catch (err) {
+        console.warn("Cloud connection fallback to LocalStorage mode:", err.message);
+        isCloudOnline = false;
+        updateCloudStatusBadge(false);
+        loadLocalStorageFallback();
+      }
+    }
+
+    function updateCloudStatusBadge(online) {
+      const badge = document.getElementById('cloud-status-badge');
+      if (!badge) return;
+      if (online) {
+        badge.className = "px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1";
+        badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Cloud Terhubung`;
+      } else {
+        badge.className = "px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1";
+        badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Mode Offline/Local`;
+      }
+    }
+
+    // --- REALTIME LISTENERS (RULE 2 & RULE 3) ---
+    function setupRealtimeListeners() {
+      if (!db || !currentUser) return;
+
+      // 1. Listen to Votes Collection (Simple Collection Query without complex order/where)
+      const votesColRef = collection(db, 'artifacts', appId, 'public', 'data', 'votes');
+      onSnapshot(votesColRef, (snapshot) => {
+        votersLog = [];
+        snapshot.forEach(docSnap => {
+          votersLog.push({ id: docSnap.id, ...docSnap.data() });
+        });
+        renderAdminDashboardIfActive();
+      }, (err) => {
+        console.error("Votes listener error:", err);
+      });
+
+      // 2. Listen to Phase Settings Doc
+      onSnapshot(settingsDocPath(db), (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          votingPhase = data.votingPhase || 1;
+          finalKetuaId = data.finalKetuaId || null;
+        } else {
+          // Initialize setting doc if missing
+          setDoc(settingsDocPath(db), { votingPhase: 1, finalKetuaId: null });
+        }
+        updatePhaseUI();
+        renderCandidateCards();
+        renderVotingOptions();
+        renderAdminDashboardIfActive();
+      }, (err) => console.error("Settings listener error:", err));
+
+      // 3. Listen to Candidates Doc
+      onSnapshot(candidatesDocPath(db), (docSnap) => {
+        if (docSnap.exists()) {
+          candidates = docSnap.data().items || DEFAULT_CANDIDATES;
+        } else {
+          setDoc(candidatesDocPath(db), { items: DEFAULT_CANDIDATES });
+        }
+        renderCandidateCards();
+        renderVotingOptions();
+        renderAdminDashboardIfActive();
+      }, (err) => console.error("Candidates listener error:", err));
+    }
+
+    function loadLocalStorageFallback() {
+      candidates = JSON.parse(localStorage.getItem('evote_candidates')) || DEFAULT_CANDIDATES;
+      votersLog = JSON.parse(localStorage.getItem('evote_voters_log')) || [];
+      votingPhase = parseInt(localStorage.getItem('evote_phase')) || 1;
+      finalKetuaId = parseInt(localStorage.getItem('evote_final_ketua_id')) || null;
+      updatePhaseUI();
+      renderCandidateCards();
+      renderVotingOptions();
+    }
+
+    // --- GLOBAL FUNCTIONS EXPOSED TO WINDOW ---
+    window.switchView = function(viewId) {
+      if (viewId === 'bilik-suara' && !currentVoter) {
+        window.showToast('Isi identitas Anda terlebih dahulu di Beranda!', 'warning');
+        window.switchView('landing');
+        return;
+      }
+
+      document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+      const target = document.getElementById(`view-${viewId}`);
+      if (target) {
+        target.classList.remove('hidden');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      if (viewId === 'admin') {
+        renderAdminDashboard();
+      }
+    };
+
+    window.showToast = function(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      
+      let bg = 'bg-slate-800 border-slate-700 text-white';
+      let icon = 'info';
+
+      if (type === 'success') {
+        bg = 'bg-emerald-950/90 border-emerald-500/50 text-emerald-200';
+        icon = 'check-circle';
+      } else if (type === 'error') {
+        bg = 'bg-rose-950/90 border-rose-500/50 text-rose-200';
+        icon = 'alert-circle';
+      } else if (type === 'warning') {
+        bg = 'bg-amber-950/90 border-amber-500/50 text-amber-200';
+        icon = 'alert-triangle';
+      }
+
+      toast.className = `p-3.5 rounded-xl border ${bg} backdrop-blur-md shadow-xl text-xs sm:text-sm flex items-center gap-2.5 transition-all duration-300 transform translate-x-10 opacity-0`;
+      toast.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4 flex-shrink-0"></i> <span>${message}</span>`;
+
+      container.appendChild(toast);
+      lucide.createIcons();
+
+      setTimeout(() => toast.classList.remove('translate-x-10', 'opacity-0'), 10);
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-x-10');
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    };
+
+    window.handleKelasChange = function(selectEl) {
+      const manualInput = document.getElementById('input-kelas-manual');
+      if (selectEl.value === 'custom') {
+        manualInput.classList.remove('hidden');
+        manualInput.required = true;
+      } else {
+        manualInput.classList.add('hidden');
+        manualInput.required = false;
+      }
+    };
+
+    window.handleVoterLogin = async function(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btn-login-submit');
+      const nama = document.getElementById('input-nama').value.trim();
+      let kelas = document.getElementById('select-kelas').value;
+      if (kelas === 'custom') {
+        kelas = document.getElementById('input-kelas-manual').value.trim();
+      }
+
+      if (!nama || !kelas) {
+        window.showToast('Mohon isi Nama Lengkap dan Kelas dengan benar!', 'warning');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = `<i data-lucide="loader" class="w-5 h-5 animate-spin"></i> Memeriksa Database Cloud...`;
+      lucide.createIcons();
+
+      // Check anti-voting ganda directly across ALL votes in Cloud Memory
+      const isAlreadyVoted = votersLog.some(v => 
+        v.name && v.name.toLowerCase() === nama.toLowerCase() && 
+        v.class && v.class.toLowerCase() === kelas.toLowerCase() &&
+        v.phase === votingPhase
+      );
+
+      btn.disabled = false;
+      btn.innerHTML = `<span>Verifikasi Identitas & Lanjut</span> <i data-lucide="arrow-right" class="w-5 h-5"></i>`;
+      lucide.createIcons();
+
+      if (isAlreadyVoted) {
+        window.showToast(`Pemilih ${nama} (${kelas}) SUDAH menggunakan hak suara di Tahap ${votingPhase}!`, 'error');
+        return;
+      }
+
+      currentVoter = { name: nama, class: kelas };
+      sessionStorage.setItem('evote_current_voter', JSON.stringify(currentVoter));
+
+      updateCurrentVoterDisplay();
+      window.showToast(`Selamat datang, ${nama}! Silakan pelajari Visi & Misi.`, 'success');
+      window.switchView('visi-misi');
+    };
+
+    function updateCurrentVoterDisplay() {
+      if (!currentVoter) return;
+      document.getElementById('display-voter-info').textContent = `${currentVoter.name} (${currentVoter.class})`;
+      document.getElementById('voter-name-highlight').textContent = `${currentVoter.name}`;
+      document.getElementById('badge-voter-initial').textContent = currentVoter.name.charAt(0).toUpperCase();
+    }
+
+    function updatePhaseUI() {
+      const phaseBadgeText = document.getElementById('phase-text');
+      const bannerTitle = document.getElementById('banner-phase-title');
+      const bannerDesc = document.getElementById('banner-phase-desc');
+      const adminPhaseLabel = document.getElementById('admin-current-phase-label');
+      const btnPhase1 = document.getElementById('btn-phase-1');
+
+      if (votingPhase === 1) {
+        if (phaseBadgeText) phaseBadgeText.textContent = 'Tahap 1: 3 Formatur';
+        if (bannerTitle) bannerTitle.textContent = 'Tahap 1: Pemilihan 3 Calon Formatur';
+        if (bannerDesc) bannerDesc.textContent = 'Pilih salah satu dari 3 kandidat formatur terbaik.';
+        if (adminPhaseLabel) adminPhaseLabel.textContent = 'Tahap 1 (Pemilihan 3 Formatur)';
+
+        if (btnPhase1) {
+          btnPhase1.className = 'px-4 py-2 rounded-xl emerald-gradient text-white text-xs font-bold shadow-lg';
+        }
+      } else {
+        const ketua = candidates.find(c => c.id === finalKetuaId);
+        const nameKetua = ketua ? ketua.name : 'Calon Terpilih';
+        if (phaseBadgeText) phaseBadgeText.textContent = 'Tahap 2: Final Ketua';
+        if (bannerTitle) bannerTitle.textContent = `Tahap 2: Pengesahan 1 Ketua Terpilih (${nameKetua})`;
+        if (bannerDesc) bannerDesc.textContent = 'Sistem telah mengerucut menjadi 1 calon utama hasil penetapan formatur.';
+        if (adminPhaseLabel) adminPhaseLabel.textContent = `Tahap 2 (Ketua Terpilih: ${nameKetua})`;
+
+        if (btnPhase1) {
+          btnPhase1.className = 'px-4 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 text-xs font-bold hover:bg-slate-700';
+        }
+      }
+    }
+
+    function renderCandidateCards() {
+      const container = document.getElementById('candidate-cards-container');
+      if (!container) return;
+      container.innerHTML = '';
+
+      const activeCandidates = (votingPhase === 2 && finalKetuaId)
+        ? candidates.filter(c => c.id === finalKetuaId)
+        : candidates;
+
+      activeCandidates.forEach(c => {
+        const card = document.createElement('div');
+        card.className = `glass-card rounded-2xl p-6 flex flex-col justify-between relative overflow-hidden transition-all duration-300 hover:border-emerald-500/50 hover:shadow-2xl hover:-translate-y-1 ${votingPhase === 2 ? 'border-2 border-amber-500/60' : ''}`;
+        
+        card.innerHTML = `
+          <div class="absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-black ${votingPhase === 2 ? 'gold-gradient text-slate-950' : 'bg-slate-800 text-emerald-400 border border-emerald-500/30'}">
+            No. ${c.no}
+          </div>
+
+          <div>
+            <div class="flex items-center gap-4 mb-4">
+              <img src="${c.photo}" alt="${c.name}" class="w-16 h-16 rounded-2xl object-cover border-2 border-emerald-500/30 shadow-md">
+              <div>
+                <h3 class="text-lg font-bold text-white leading-tight">${c.name}</h3>
+                <span class="text-xs text-slate-400 font-medium">Kelas: ${c.class}</span>
+              </div>
+            </div>
+
+            <div class="space-y-3 text-xs sm:text-sm">
+              <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+                <span class="text-emerald-400 font-bold block mb-1 uppercase tracking-wider text-[10px]">Visi:</span>
+                <p class="text-slate-200 leading-relaxed italic">"${c.vision}"</p>
+              </div>
+
+              <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+                <span class="text-amber-400 font-bold block mb-1 uppercase tracking-wider text-[10px]">Misi Utama:</span>
+                <p class="text-slate-300 leading-relaxed whitespace-pre-line">${c.mission}</p>
+              </div>
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function renderVotingOptions() {
+      const container = document.getElementById('voting-options-container');
+      if (!container) return;
+      container.innerHTML = '';
+
+      const activeCandidates = (votingPhase === 2 && finalKetuaId)
+        ? candidates.filter(c => c.id === finalKetuaId)
+        : candidates;
+
+      activeCandidates.forEach(c => {
+        const card = document.createElement('div');
+        card.className = "glass-card rounded-2xl p-6 text-center flex flex-col justify-between transition-all duration-300 hover:border-emerald-400 hover:shadow-2xl relative group";
+        
+        card.innerHTML = `
+          <div>
+            <span class="inline-block px-3 py-1 rounded-full text-xs font-extrabold bg-slate-800 text-amber-400 border border-amber-500/30 mb-4">
+              KANDIDAT ${c.no}
+            </span>
+            <img src="${c.photo}" alt="${c.name}" class="w-24 h-24 rounded-full object-cover mx-auto mb-4 border-4 border-slate-800 group-hover:border-emerald-400 transition-all shadow-xl">
+            <h3 class="text-xl font-bold text-white mb-1">${c.name}</h3>
+            <p class="text-xs text-slate-400 mb-4">Kelas: ${c.class}</p>
+          </div>
+
+          <button onclick="confirmSelectCandidate(${c.id})" class="w-full py-3 px-4 rounded-xl emerald-gradient text-white text-sm font-bold shadow-lg shadow-emerald-900/40 hover:opacity-95 transition flex items-center justify-center gap-2">
+            <i data-lucide="check-square" class="w-4 h-4"></i>
+            <span>Pilih Candidate Ini</span>
+          </button>
+        `;
+        container.appendChild(card);
+      });
+      lucide.createIcons();
+    }
+
+    window.confirmSelectCandidate = function(candidateId) {
+      if (!currentVoter) {
+        window.showToast('Identitas pemilih belum terverifikasi!', 'error');
+        window.switchView('landing');
+        return;
+      }
+
+      selectedCandidateForVote = candidates.find(c => c.id === candidateId);
+      if (!selectedCandidateForVote) return;
+
+      document.getElementById('confirm-candidate-no').textContent = `KANDIDAT ${selectedCandidateForVote.no}`;
+      document.getElementById('confirm-candidate-name').textContent = selectedCandidateForVote.name;
+      document.getElementById('confirm-candidate-class').textContent = `Kelas: ${selectedCandidateForVote.class}`;
+
+      document.getElementById('modal-confirm-vote').classList.remove('hidden');
+    };
+
+    window.closeConfirmModal = function() {
+      document.getElementById('modal-confirm-vote').classList.add('hidden');
+      selectedCandidateForVote = null;
+    };
+
+    window.submitVoteCloud = async function() {
+      if (!currentVoter || !selectedCandidateForVote) return;
+
+      const btn = document.getElementById('btn-submit-final-vote');
+      btn.disabled = true;
+      btn.textContent = 'Menyimpan Suara...';
+
+      const now = new Date();
+      const timeString = now.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) + ' - ' + now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+      const voteRecord = {
+        name: currentVoter.name,
+        class: currentVoter.class,
+        choiceId: selectedCandidateForVote.id,
+        choiceName: selectedCandidateForVote.name,
+        choiceNo: selectedCandidateForVote.no,
+        phase: votingPhase,
+        timestamp: timeString,
+        createdAt: new Date().toISOString()
+      };
+
+      try {
+        if (isCloudOnline && db && currentUser) {
+          const votesRef = collection(db, 'artifacts', appId, 'public', 'data', 'votes');
+          await addDoc(votesRef, voteRecord);
+        } else {
+          // Local fallback
+          voteRecord.id = Date.now().toString();
+          votersLog.push(voteRecord);
+          localStorage.setItem('evote_voters_log', JSON.stringify(votersLog));
+        }
+
+        document.getElementById('ty-voter-name').textContent = currentVoter.name;
+        document.getElementById('ty-voter-kelas').textContent = currentVoter.class;
+        document.getElementById('ty-voter-time').textContent = timeString;
+
+        window.closeConfirmModal();
+        window.showToast('Suara Anda telah sukses tersimpan di Cloud Database!', 'success');
+        window.switchView('thankyou');
+      } catch (err) {
+        console.error("Gagal simpan suara:", err);
+        window.showToast('Gagal mengirim suara ke Cloud. Mencoba lokal...', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Kirim Suara Sah';
+      }
+    };
+
+    window.resetSessionForNextVoter = function() {
+      sessionStorage.removeItem('evote_current_voter');
+      currentVoter = null;
+      document.getElementById('form-voter-login').reset();
+      document.getElementById('select-kelas').value = '';
+      document.getElementById('input-kelas-manual').classList.add('hidden');
+      window.switchView('landing');
+    };
+
+    // --- ADMIN MODAL & PIN ---
+    window.openAdminModal = function() {
+      document.getElementById('modal-admin-pin').classList.remove('hidden');
+    };
+
+    window.closeAdminModal = function() {
+      document.getElementById('modal-admin-pin').classList.add('hidden');
+      document.getElementById('input-pin').value = '';
+    };
+
+    window.handleAdminLogin = function(e) {
+      e.preventDefault();
+      const pin = document.getElementById('input-pin').value;
+      if (pin === '1234') {
+        window.closeAdminModal();
+        window.showToast('Akses Admin Berhasil Diterima!', 'success');
+        window.switchView('admin');
+      } else {
+        window.showToast('PIN Salah! Harap masukkan PIN yang benar.', 'error');
+      }
+    };
+
+    window.openCanvaTutorialModal = function() {
+      document.getElementById('modal-canva-tutorial').classList.remove('hidden');
+    };
+    window.closeCanvaTutorialModal = function() {
+      document.getElementById('modal-canva-tutorial').classList.add('hidden');
+    };
+
+    // --- ADMIN DASHBOARD RENDER ---
+    function renderAdminDashboardIfActive() {
+      const adminSec = document.getElementById('view-admin');
+      if (adminSec && !adminSec.classList.contains('hidden')) {
+        renderAdminDashboard();
+      }
+    }
+
+    function renderAdminDashboard() {
+      updatePhaseUI();
+      
+      const activePhaseVotes = votersLog.filter(v => v.phase === votingPhase);
+      const totalVotes = activePhaseVotes.length;
+      document.getElementById('stat-total-votes').textContent = totalVotes;
+
+      const candidateCounts = {};
+      candidates.forEach(c => candidateCounts[c.id] = 0);
+      activePhaseVotes.forEach(v => {
+        if (candidateCounts[v.choiceId] !== undefined) {
+          candidateCounts[v.choiceId]++;
+        }
+      });
+
+      let maxCount = -1;
+      let topCand = null;
+      candidates.forEach(c => {
+        if (candidateCounts[c.id] > maxCount) {
+          maxCount = candidateCounts[c.id];
+          topCand = c;
+        }
+      });
+
+      if (topCand && totalVotes > 0) {
+        document.getElementById('stat-top-candidate').textContent = topCand.name;
+        document.getElementById('stat-top-count').textContent = `${maxCount} suara (${((maxCount / totalVotes) * 100).toFixed(1)}%)`;
+      } else {
+        document.getElementById('stat-top-candidate').textContent = '-';
+        document.getElementById('stat-top-count').textContent = '0 suara';
+      }
+
+      document.getElementById('stat-phase-status').textContent = `Tahap ${votingPhase}`;
+      const finalKetuaObj = candidates.find(c => c.id === finalKetuaId);
+      document.getElementById('stat-final-ketua').textContent = finalKetuaObj ? finalKetuaObj.name : 'Belum Ditentukan';
+
+      // Breakdown Cards
+      const breakdownContainer = document.getElementById('admin-candidates-breakdown');
+      breakdownContainer.innerHTML = '';
+
+      candidates.forEach(c => {
+        const count = candidateCounts[c.id] || 0;
+        const pct = totalVotes > 0 ? ((count / totalVotes) * 100).toFixed(1) : 0;
+
+        const item = document.createElement('div');
+        item.className = "bg-slate-900/60 p-3.5 rounded-xl border border-slate-800 space-y-1.5";
+        item.innerHTML = `
+          <div class="flex justify-between text-xs font-semibold">
+            <span class="text-white">Kandidat ${c.no} - ${c.name}</span>
+            <span class="text-emerald-400">${count} Suara (${pct}%)</span>
+          </div>
+          <div class="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden">
+            <div class="emerald-gradient h-2.5 rounded-full transition-all duration-500" style="width: ${pct}%"></div>
+          </div>
+        `;
+        breakdownContainer.appendChild(item);
+      });
+
+      renderVoteChart(candidateCounts);
+      window.renderAdminTable();
+    }
+
+    function renderVoteChart(counts) {
+      const canvas = document.getElementById('chart-votes');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      if (voteChartInstance) {
+        voteChartInstance.destroy();
+      }
+
+      const labels = candidates.map(c => `Kandidat ${c.no}: ${c.name.split(' ')[0]}`);
+      const dataValues = candidates.map(c => counts[c.id] || 0);
+
+      voteChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Perolehan Suara',
+            data: dataValues,
+            backgroundColor: ['rgba(16, 185, 129, 0.75)', 'rgba(245, 158, 11, 0.75)', 'rgba(59, 130, 246, 0.75)'],
+            borderColor: ['#10b981', '#f59e0b', '#3b82f6'],
+            borderWidth: 2,
+            borderRadius: 8
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { precision: 0, color: '#94a3b8' },
+              grid: { color: 'rgba(255, 255, 255, 0.05)' }
+            },
+            x: {
+              ticks: { color: '#94a3b8' },
+              grid: { display: false }
+            }
+          }
+        }
+      });
+    }
+
+    window.populateClassFilterAdmin = function() {
+      const select = document.getElementById('filter-kelas-admin');
+      if (!select) return;
+      const classes = ['XA', 'XB', 'XIA', 'XIB', 'XIIA', 'XIIB'];
+      select.innerHTML = '<option value="ALL">Semua Kelas</option>';
+      classes.forEach(cls => {
+        select.innerHTML += `<option value="${cls}">${cls}</option>`;
+      });
+    };
+
+    window.renderAdminTable = function() {
+      const tbody = document.getElementById('table-voters-body');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+
+      const queryStr = (document.getElementById('search-voter').value || '').toLowerCase();
+      const filterClass = document.getElementById('filter-kelas-admin').value;
+
+      const filtered = votersLog.filter(v => {
+        const matchesQuery = (v.name || '').toLowerCase().includes(queryStr) || (v.class || '').toLowerCase().includes(queryStr);
+        const matchesClass = filterClass === 'ALL' || v.class === filterClass;
+        return matchesQuery && matchesClass;
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-500">Belum ada data pemilih yang sesuai di database.</td></tr>`;
+        return;
+      }
+
+      filtered.forEach((v, idx) => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-800/50 transition";
+        tr.innerHTML = `
+          <td class="p-3 text-slate-400">${idx + 1}</td>
+          <td class="p-3 text-slate-400">${v.timestamp || '-'}</td>
+          <td class="p-3 font-semibold text-white">${v.name}</td>
+          <td class="p-3"><span class="px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300 text-[11px]">${v.class}</span></td>
+          <td class="p-3"><span class="px-2 py-0.5 rounded ${v.phase === 2 ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'} text-[10px]">Tahap ${v.phase}</span></td>
+          <td class="p-3 font-bold text-amber-400">Kandidat ${v.choiceNo} - ${v.choiceName}</td>
+          <td class="p-3 text-right">
+            <button onclick="deleteSingleVoteCloud('${v.id}')" class="p-1 rounded bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 text-[11px] font-semibold">Hapus</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    };
+
+    // --- PHASE CONTROL & CLOUD AUTO-KERUCUT ---
+    window.setVotingPhaseCloud = async function(phase) {
+      votingPhase = phase;
+      if (phase === 1) finalKetuaId = null;
+
+      try {
+        if (isCloudOnline && db && currentUser) {
+          await setDoc(settingsDocPath(db), { votingPhase: phase, finalKetuaId: finalKetuaId });
+        } else {
+          localStorage.setItem('evote_phase', votingPhase);
+          if (phase === 1) localStorage.removeItem('evote_final_ketua_id');
+        }
+        window.showToast(`Sistem beralih ke Tahap ${phase} secara terpusat.`, 'info');
+      } catch (err) {
+        console.error("Phase update error:", err);
+      }
+    };
+
+    window.autoKerucutkanKetuaCloud = async function() {
+      const activePhaseVotes = votersLog.filter(v => v.phase === 1);
+      if (activePhaseVotes.length === 0) {
+        window.showToast('Belum ada suara di Tahap 1 untuk dikerucutkan!', 'warning');
+        return;
+      }
+
+      const candidateCounts = {};
+      candidates.forEach(c => candidateCounts[c.id] = 0);
+      activePhaseVotes.forEach(v => {
+        if (candidateCounts[v.choiceId] !== undefined) {
+          candidateCounts[v.choiceId]++;
+        }
+      });
+
+      let maxVotes = -1;
+      let winner = null;
+      candidates.forEach(c => {
+        if (candidateCounts[c.id] > maxVotes) {
+          maxVotes = candidateCounts[c.id];
+          winner = c;
+        }
+      });
+
+      if (winner) {
+        finalKetuaId = winner.id;
+        votingPhase = 2;
+
+        try {
+          if (isCloudOnline && db && currentUser) {
+            await setDoc(settingsDocPath(db), { votingPhase: 2, finalKetuaId: winner.id });
+          } else {
+            localStorage.setItem('evote_final_ketua_id', finalKetuaId);
+            localStorage.setItem('evote_phase', 2);
+          }
+          window.showToast(`Berhasil dikerucutkan ke Cloud! Ketua Terpilih: ${winner.name} (${maxVotes} Suara)`, 'success');
+        } catch (err) {
+          console.error("Auto kerucut error:", err);
+        }
+      }
+    };
+
+    // --- CANDIDATE EDITORS IN CLOUD ---
+    window.openCandidateEditModal = function() {
+      const container = document.getElementById('edit-candidates-fields-container');
+      container.innerHTML = '';
+
+      candidates.forEach((c, i) => {
+        const box = document.createElement('div');
+        box.className = "bg-slate-900/80 p-4 rounded-xl border border-slate-800 space-y-3";
+        box.innerHTML = `
+          <div class="text-xs font-bold text-emerald-400">EDIT KANDIDAT ${c.no}</div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Nama Lengkap</label>
+              <input type="text" id="edit-name-${i}" value="${c.name}" class="w-full px-3 py-2 rounded-lg glass-input text-xs">
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Kelas</label>
+              <input type="text" id="edit-class-${i}" value="${c.class}" class="w-full px-3 py-2 rounded-lg glass-input text-xs">
+            </div>
+          </div>
+          <div>
+            <label class="block text-[11px] text-slate-400 mb-1">Foto URL</label>
+            <input type="text" id="edit-photo-${i}" value="${c.photo}" class="w-full px-3 py-2 rounded-lg glass-input text-xs">
+          </div>
+          <div>
+            <label class="block text-[11px] text-slate-400 mb-1">Visi</label>
+            <textarea id="edit-vision-${i}" rows="2" class="w-full px-3 py-2 rounded-lg glass-input text-xs">${c.vision}</textarea>
+          </div>
+          <div>
+            <label class="block text-[11px] text-slate-400 mb-1">Misi</label>
+            <textarea id="edit-mission-${i}" rows="3" class="w-full px-3 py-2 rounded-lg glass-input text-xs">${c.mission}</textarea>
+          </div>
+        `;
+        container.appendChild(box);
+      });
+
+      document.getElementById('modal-edit-candidates').classList.remove('hidden');
+    };
+
+    window.closeCandidateEditModal = function() {
+      document.getElementById('modal-edit-candidates').classList.add('hidden');
+    };
+
+    window.saveCandidatesDataCloud = async function(e) {
+      e.preventDefault();
+      candidates.forEach((c, i) => {
+        c.name = document.getElementById(`edit-name-${i}`).value;
+        c.class = document.getElementById(`edit-class-${i}`).value;
+        c.photo = document.getElementById(`edit-photo-${i}`).value;
+        c.vision = document.getElementById(`edit-vision-${i}`).value;
+        c.mission = document.getElementById(`edit-mission-${i}`).value;
+      });
+
+      try {
+        if (isCloudOnline && db && currentUser) {
+          await setDoc(candidatesDocPath(db), { items: candidates });
+        } else {
+          localStorage.setItem('evote_candidates', JSON.stringify(candidates));
+        }
+        window.closeCandidateEditModal();
+        window.showToast('Data kandidat tersimpan di Cloud Database!', 'success');
+      } catch (err) {
+        console.error("Save candidates error:", err);
+      }
+    };
+
+    // --- RESET & DELETE CLOUD VOTES ---
+    let pendingAdminAction = null;
+
+    function openAdminActionConfirm(title, desc, onConfirmCallback) {
+      document.getElementById('admin-confirm-title').textContent = title;
+      document.getElementById('admin-confirm-desc').textContent = desc;
+      pendingAdminAction = onConfirmCallback;
+      document.getElementById('modal-admin-action-confirm').classList.remove('hidden');
+    }
+
+    window.closeAdminActionConfirm = function() {
+      document.getElementById('modal-admin-action-confirm').classList.add('hidden');
+      pendingAdminAction = null;
+    };
+
+    document.getElementById('btn-admin-confirm-yes').addEventListener('click', async () => {
+      const action = pendingAdminAction;
+      window.closeAdminActionConfirm();
+      if (action) await action();
+    });
+
+    window.deleteSingleVoteCloud = function(voteId) {
+      openAdminActionConfirm(
+        'Hapus Data Suara',
+        'Apakah Anda yakin ingin menghapus data suara pemilih ini dari Database Cloud?',
+        async () => {
+          try {
+            if (isCloudOnline && db && currentUser) {
+              const voteDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'votes', voteId);
+              await deleteDoc(voteDocRef);
+            } else {
+              votersLog = votersLog.filter(v => v.id !== voteId);
+              localStorage.setItem('evote_voters_log', JSON.stringify(votersLog));
+              renderAdminDashboard();
+            }
+            window.showToast('Suara berhasil dihapus.', 'success');
+          } catch (err) {
+            console.error("Delete vote error:", err);
+          }
+        }
+      );
+    };
+
+    window.confirmResetAllData = function() {
+      openAdminActionConfirm(
+        'Reset Seluruh Suara Cloud',
+        'APAKAH ANDA YAKIN? Seluruh data suara masuk dari SEMUA siswa/perangkat akan dihapus secara permanen dari Database Cloud!',
+        async () => {
+          try {
+            if (isCloudOnline && db && currentUser) {
+              const snapshot = await getDocs(getVotesCollectionRef(db));
+              const deletePromises = [];
+              snapshot.forEach(docSnap => {
+                deletePromises.push(deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'votes', docSnap.id)));
+              });
+              await Promise.all(deletePromises);
+            } else {
+              votersLog = [];
+              localStorage.removeItem('evote_voters_log');
+              renderAdminDashboard();
+            }
+            window.showToast('Seluruh suara di Cloud Database berhasil di-reset!', 'success');
+          } catch (err) {
+            console.error("Reset error:", err);
+          }
+        }
+      );
+    };
+
+    window.exportToCSV = function() {
+      if (votersLog.length === 0) {
+        window.showToast('Belum ada data suara untuk diekspor!', 'warning');
+        return;
+      }
+
+      let csv = 'No,Waktu Pemilihan,Nama Pemilih,Kelas,Tahap Pemilihan,Pilihan Kandidat\n';
+      votersLog.forEach((v, idx) => {
+        csv += `"${idx + 1}","${v.timestamp || ''}","${v.name || ''}","${v.class || ''}","Tahap ${v.phase || 1}","Kandidat ${v.choiceNo || ''} - ${v.choiceName || ''}"\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `REKAP_E-VOTING_IPMM_OSIS_${Date.now()}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.showToast('File CSV Rekap Suara berhasil diunduh!', 'success');
+    };
+
+    // --- DOM CONTENT LOADED ---
+    window.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      window.populateClassFilterAdmin();
+      initFirebase();
+
+      if (currentVoter) {
+        updateCurrentVoterDisplay();
+      }
+    });
+  </script>
+</body>
+</html>
